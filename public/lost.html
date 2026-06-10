@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通知をまつ - みつかる君</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="/">🔍 みつかる君</a>
+      <div class="nav-links">
+        <a href="/">さがす</a>
+        <a href="/found.html">とどける</a>
+        <a href="/lost.html" class="active">通知をまつ</a>
+        <a href="/dashboard.html">ダッシュボード</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width:640px">
+    <h1 class="page-title">📢 探し物を登録して通知をまつ</h1>
+    <p class="page-sub">先に登録しておくと、合う落とし物が届いた<strong>瞬間</strong>にこの画面でお知らせします</p>
+
+    <!-- 登録フォーム -->
+    <form class="card" id="lost-form">
+      <div class="form-group">
+        <label>探しているもの<span class="req">必須</span></label>
+        <input type="text" id="keywords-input" maxlength="100" placeholder="例: 青い水筒、キャラクターのシール付き" required autocomplete="off">
+        <div class="form-hint" id="parse-hint"></div>
+      </div>
+      <div class="form-group">
+        <label>カテゴリ(自動判定・直せます)</label>
+        <select id="category-select"></select>
+      </div>
+      <div class="form-group">
+        <label>色(自動判定・直せます)</label>
+        <select id="color-select"></select>
+      </div>
+      <div class="form-group">
+        <label>あなたの名前(任意)</label>
+        <input type="text" id="contact-input" maxlength="50" placeholder="例: 2-3 山田">
+        <div class="form-hint">名前はほかの人には公開されません</div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">📢 登録して通知をまつ</button>
+    </form>
+
+    <!-- 待機・マッチ画面 -->
+    <div id="watch-section" style="display:none">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-sub)">探しているもの</div>
+            <div style="font-weight:700" id="watch-keywords"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="stop-btn">見つかったのでやめる</button>
+        </div>
+      </div>
+
+      <div id="matches-area"></div>
+
+      <div class="card waiting-panel" id="waiting-panel">
+        <div class="pulse">📡</div>
+        <h3>マッチング待機中…</h3>
+        <p style="color:var(--text-sub); font-size:0.88rem; margin-top:6px">
+          合う落とし物が登録されたら、この画面にすぐ通知が届きます。<br>
+          このページは開いたままにしてね。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/lost.js"></script>
+</body>
+</html>

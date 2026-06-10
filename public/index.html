@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>みつかる君 - 落とし物マッチングAI</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="/">🔍 みつかる君</a>
+      <div class="nav-links">
+        <a href="/" class="active">さがす</a>
+        <a href="/found.html">とどける</a>
+        <a href="/lost.html">通知をまつ</a>
+        <a href="/dashboard.html">ダッシュボード</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="hero">
+      <h1>なにを落としましたか?</h1>
+      <p>ことばで入力するだけ。AIタグから探します(例:「青い水筒」「黒の折りたたみ傘」)</p>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="例: 青い水筒" autocomplete="off">
+        <button class="btn btn-primary" id="search-btn">🔍 さがす</button>
+      </div>
+      <p style="margin-top:14px; font-size:0.85rem">
+        見つからない?
+        <a href="/lost.html" style="color:var(--primary-dark); font-weight:700">「通知をまつ」に登録</a>
+        すると、届いた瞬間にお知らせします
+      </p>
+    </div>
+
+    <div id="results-section" style="display:none">
+      <h2 class="section-title">🔎 検索結果 <span id="results-count" style="font-size:0.85rem; color:var(--text-sub)"></span></h2>
+      <div class="grid" id="results-grid"></div>
+      <div class="empty-state" id="results-empty" style="display:none">
+        <div class="big">🙏</div>
+        まだ届いていないみたい…<br>
+        <a href="/lost.html" class="btn btn-accent btn-sm" style="margin-top:14px">📢 届いたら通知してもらう</a>
+      </div>
+    </div>
+
+    <h2 class="section-title">🧺 最近とどいた落とし物</h2>
+    <div class="grid" id="recent-grid"></div>
+    <div class="empty-state" id="recent-empty" style="display:none">
+      <div class="big">📭</div>
+      まだ落とし物は登録されていません<br>
+      <a href="/found.html" class="btn btn-primary btn-sm" style="margin-top:14px">📷 拾ったものを登録する</a>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/index.js"></script>
+</body>
+</html>

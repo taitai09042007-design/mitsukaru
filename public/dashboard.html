@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダッシュボード - みつかる君</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="/">🔍 みつかる君</a>
+      <div class="nav-links">
+        <a href="/">さがす</a>
+        <a href="/found.html">とどける</a>
+        <a href="/lost.html">通知をまつ</a>
+        <a href="/dashboard.html" class="active">ダッシュボード</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">📊 ダッシュボード</h1>
+    <p class="page-sub">落とし物がどれだけ持ち主に帰れたかを見える化します</p>
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="num" id="stat-total">-</div>
+        <div class="label">届いた落とし物</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-returned">-</div>
+        <div class="label">持ち主に返却</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-rate">-%</div>
+        <div class="label">返却率</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-waiting">-</div>
+        <div class="label">通知待ちの探し物</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">📦 カテゴリ別の状況 <span style="font-size:0.75rem; color:var(--text-sub)">(緑=保管中 / オレンジ=返却済み)</span></h2>
+    <div class="card" id="category-bars">
+      <div class="empty-state">まだデータがありません</div>
+    </div>
+
+    <h2 class="section-title">📅 直近7日間の登録数</h2>
+    <div class="card" id="week-bars"></div>
+
+    <h2 class="section-title">🕐 最近の落とし物</h2>
+    <div class="grid" id="recent-grid"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

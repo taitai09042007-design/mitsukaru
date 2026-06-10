@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mitsukaru
+    runtime: node
+    plan: free
+    buildCommand: npm install --no-audit --no-fund
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # 返却記録を保管担当だけに制限するPIN(Renderのダッシュボードで値を設定)
+      - key: STAFF_PIN
+        sync: false
+    # 注意: freeプランはディスクが一時的なため、再デプロイ/再起動でデータと画像が消えます。
+    # データを永続化する場合は有料プランにして以下を有効化し、DATA_DIR も設定してください。
+    # disk:
+    #   name: mitsukaru-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # envVars に追加:
+    #   - key: DATA_DIR
+    #     value: /var/data

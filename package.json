@@ -1,0 +1,17 @@
+{
+  "name": "mitsukaru",
+  "version": "1.0.0",
+  "description": "落とし物マッチングAI「みつかる君」- 写真を撮るだけでAIがタグ付けし、落とし主とマッチングするシステム",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.1",
+    "socket.io": "^4.8.1"
+  }
+}

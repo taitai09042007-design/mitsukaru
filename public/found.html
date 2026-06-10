@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拾ったものをとどける - みつかる君</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="/">🔍 みつかる君</a>
+      <div class="nav-links">
+        <a href="/">さがす</a>
+        <a href="/found.html" class="active">とどける</a>
+        <a href="/lost.html">通知をまつ</a>
+        <a href="/dashboard.html">ダッシュボード</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width:640px">
+    <h1 class="page-title">📷 拾ったものをとどける</h1>
+    <p class="page-sub">写真を撮るだけで、AIが自動でタグ付けします(約10秒で登録完了)</p>
+
+    <div class="notice">
+      ⚠️ <strong>撮影のおねがい</strong><br>
+      ・写真には<strong>落とし物だけ</strong>を写してください(人の顔や名札の個人名が写らないように)<br>
+      ・財布・スマホなどの<strong>貴重品</strong>は、登録したあとすぐに職員室へ直接とどけてください
+    </div>
+
+    <div class="steps">
+      <div class="step active" id="step1"><span class="dot">1</span>写真</div>
+      <div class="step" id="step2"><span class="dot">2</span>AI解析</div>
+      <div class="step" id="step3"><span class="dot">3</span>登録</div>
+    </div>
+
+    <!-- ステップ1: 撮影 -->
+    <div class="card" id="capture-card">
+      <div class="camera-area" id="camera-area">
+        <div class="camera-placeholder" id="camera-placeholder">
+          📷 カメラを起動するか、写真を選んでください
+        </div>
+        <video id="video" autoplay playsinline muted style="display:none"></video>
+        <canvas id="capture-canvas" style="display:none"></canvas>
+      </div>
+      <div class="camera-controls">
+        <button class="btn btn-primary" id="start-camera-btn">📹 カメラを起動</button>
+        <button class="btn btn-accent" id="shoot-btn" style="display:none">📸 撮影する</button>
+        <button class="btn btn-ghost" id="retake-btn" style="display:none">🔄 撮りなおす</button>
+        <label class="btn btn-ghost" for="file-input">🖼️ 写真をえらぶ</label>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+      </div>
+    </div>
+
+    <!-- ステップ2: AI解析結果 -->
+    <div class="ai-result" id="ai-result" style="display:none">
+      <div class="ai-title" id="ai-status"><span class="spinner"></span> AIが解析中…</div>
+      <div class="ai-chips" id="ai-chips"></div>
+    </div>
+
+    <!-- ステップ3: 登録フォーム -->
+    <form class="card" id="register-form" style="display:none; margin-top:16px">
+      <div class="form-group">
+        <label>カテゴリ<span class="req">必須</span></label>
+        <select id="category-select" required></select>
+        <div class="form-hint">AIの判定が違っていたら直してください</div>
+      </div>
+      <div class="form-group">
+        <label>色</label>
+        <select id="color-select"></select>
+      </div>
+      <div class="form-group">
+        <label>特徴メモ</label>
+        <input type="text" id="description-input" maxlength="200" placeholder="例: キャラクターのシール付き、名前が書いてある">
+      </div>
+      <div class="form-group">
+        <label>拾った場所</label>
+        <input type="text" id="location-input" maxlength="100" placeholder="例: 体育館、2年3組の教室、北階段">
+      </div>
+      <div class="form-group">
+        <label>とどけた保管場所<span class="req">必須</span></label>
+        <select id="storage-select" required></select>
+        <div class="form-hint">実物はこの場所にとどけてください</div>
+      </div>
+      <div class="form-group">
+        <label>あなたの名前(任意)</label>
+        <input type="text" id="reporter-input" maxlength="50" placeholder="例: 2-3 山田">
+        <div class="form-hint">名前はほかの人には公開されません</div>
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn" style="width:100%">🧺 とどける(登録する)</button>
+    </form>
+
+    <!-- 完了画面 -->
+    <div class="card" id="done-card" style="display:none; text-align:center; padding:40px 20px">
+      <div style="font-size:3rem">🎉</div>
+      <h2 style="margin:10px 0 6px">登録ありがとう!</h2>
+      <p id="done-message" style="color:var(--text-sub); margin-bottom:20px"></p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
+        <button class="btn btn-primary" id="another-btn">📷 つづけて登録する</button>
+        <a class="btn btn-ghost" href="/">トップへもどる</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/ai-tagger.js"></script>
+  <script src="/js/found.js"></script>
+</body>
+</html>
