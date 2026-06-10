@@ -4,3 +4,4 @@ data.json.tmp
 uploads/*
 !uploads/.gitkeep
 .env
+firebase-key.json

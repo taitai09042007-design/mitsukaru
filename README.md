@@ -64,7 +64,7 @@
 
 - **Backend**: Node.js / Express / Socket.IO / multer
 - **Frontend**: Vanilla JS / TensorFlow.js(CDN)
-- **DB**: JSONファイル(セットアップ不要。ネイティブ依存なしでどこでも動く)
+- **DB**: Firebase Realtime Database(データ+画像を永続保存)。Firebase未設定ならJSONファイルに自動フォールバックするので、セットアップなしでも動く
 
 ## セットアップ
 
@@ -75,6 +75,18 @@ npm start
 ```
 
 → http://localhost:3100 を開く
+
+### データ保存先の切り替え
+
+起動時に自動判定されます。
+
+| 条件 | 保存先 |
+| --- | --- |
+| `.env` にFirebase設定あり | **Firebase Realtime Database**(再起動・再デプロイしてもデータと画像が消えない) |
+| Firebase設定なし | ローカルの `data.json` + `uploads/`(お試し・オフライン用) |
+
+Firebaseを使うには `.env.example` をコピーして `.env` を作り、`FIREBASE_DATABASE_URL` と
+`FIREBASE_KEY_PATH`(サービスアカウント鍵ファイルのパス)を設定してください。
 
 ※ AIの物体認識モデルは初回にCDNから読み込むため、インターネット接続が必要です。
 オフライン環境でも手動カテゴリ選択で全機能が使えます(AI部分のみフォールバック)。
@@ -106,11 +118,22 @@ node test-flow.js
 4. サービス `mitsukaru` が自動作成される(freeプラン)
 5. 必要なら環境変数 `STAFF_PIN` をダッシュボードで設定(返却記録の保護)
 
+### Renderでのデータ永続化(Firebase設定・推奨)
+
+freeプランはディスクが一時的なため、**Firebaseを設定しないと再起動でデータが消えます**。
+Renderのダッシュボード → `mitsukaru` → Environment で以下を設定してください。
+
+| 環境変数 | 値 |
+| --- | --- |
+| `FIREBASE_DATABASE_URL` | RTDBのURL(例: `https://xxx-default-rtdb.firebaseio.com/`) |
+| `FIREBASE_SERVICE_ACCOUNT` | サービスアカウント鍵JSONファイルの中身を丸ごと貼り付け |
+
+設定すると起動ログに「Firebase Realtime Database に保存します」と表示されます。
+
 ### 本番運用の注意
 
-- **freeプランはディスクが一時的**です。再デプロイ・再起動で登録データと画像が消えます(文化祭などの短期デモなら問題なし)
-- データを残したい場合は有料プランで永続ディスクをマウントし、環境変数 `DATA_DIR` にマウント先(例: `/var/data`)を設定してください(`render.yaml` 内のコメント参照)
 - HTTPSはRenderが自動で終端します
+- freeプランは15分アクセスがないとスリープし、次のアクセスで起きるまで数十秒かかります(データはFirebaseにあるので消えません)
 
 ## デモのシナリオ例(発表用)
 

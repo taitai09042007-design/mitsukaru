@@ -2,11 +2,19 @@
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+
+// .env があれば読み込む(なくてもOK)
+try {
+  process.loadEnvFile(path.join(__dirname, '.env'));
+} catch (_) { /* .envなしで起動 */ }
+
 const express = require('express');
 const multer = require('multer');
 const { Server } = require('socket.io');
 
 const Store = require('./lib/store');
+const FirebaseStore = require('./lib/firebase-store');
+const { LocalImageStore, FirebaseImageStore } = require('./lib/image-store');
 const {
   CATEGORIES,
   COLORS,
@@ -37,9 +45,46 @@ const STORAGE_PLACES = [
   'その他',
 ];
 
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Firebase設定があればFirebase保存、なければローカルファイル保存(起動時に自動判定)
+const FIREBASE_ROOT = process.env.FIREBASE_ROOT || 'mitsukaru';
+let store;
+let imageStore;
 
-const store = new Store(path.join(DATA_DIR, 'data.json'));
+function loadFirebaseCredential() {
+  // 方法1: 環境変数に直接JSON(Render等のホスティング向け)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  }
+  // 方法2: 鍵ファイルのパス(ローカル開発向け)
+  if (process.env.FIREBASE_KEY_PATH) {
+    const keyPath = path.resolve(__dirname, process.env.FIREBASE_KEY_PATH);
+    if (fs.existsSync(keyPath)) return JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+  }
+  return null;
+}
+
+async function initStorage() {
+  const databaseURL = process.env.FIREBASE_DATABASE_URL;
+  const credential = loadFirebaseCredential();
+
+  if (databaseURL && credential) {
+    const { initializeApp, cert } = require('firebase-admin/app');
+    const { getDatabase } = require('firebase-admin/database');
+    const firebaseApp = initializeApp({
+      credential: cert(credential),
+      databaseURL,
+    });
+    const db = getDatabase(firebaseApp);
+    store = new FirebaseStore(db, FIREBASE_ROOT);
+    await store.init();
+    imageStore = new FirebaseImageStore(db, FIREBASE_ROOT);
+    console.log('[storage] Firebase Realtime Database に保存します(再起動してもデータは消えません)');
+  } else {
+    store = new Store(path.join(DATA_DIR, 'data.json'));
+    imageStore = new LocalImageStore(UPLOAD_DIR);
+    console.log('[storage] ローカルファイルに保存します(Firebaseを使うには .env を設定)');
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -57,7 +102,20 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(UPLOAD_DIR));
+
+// 画像配信(ローカル/Firebaseどちらのストアでも同じURLで配信)
+app.get('/uploads/:filename', async (req, res) => {
+  try {
+    const image = await imageStore.get(req.params.filename);
+    if (!image) return res.status(404).end();
+    res.setHeader('Content-Type', image.mime);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.end(image.buffer);
+  } catch (err) {
+    console.error('[uploads] 画像取得失敗:', err.message);
+    res.status(500).end();
+  }
+});
 
 // --- 簡易レート制限(スパム登録・連打対策。外部依存なしのインメモリ方式) ---
 const rateBuckets = new Map();
@@ -82,15 +140,9 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
-// --- 画像アップロード設定 ---
+// --- 画像アップロード設定(メモリ受信 → 画像ストアへ保存) ---
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (req, file, cb) => {
-      const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }[file.mimetype] || '.jpg';
-      cb(null, `found_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype));
@@ -133,11 +185,11 @@ app.get('/api/meta', (req, res) => {
 });
 
 // --- 拾得物の登録 ---
-app.post('/api/found', rateLimit(15, 60 * 1000), upload.single('image'), (req, res) => {
+app.post('/api/found', rateLimit(15, 60 * 1000), upload.single('image'), async (req, res, next) => {
+  try {
   const body = req.body || {};
   const category = cleanCategory(body.category);
   if (!category) {
-    if (req.file) fs.unlink(req.file.path, () => {});
     return res.status(400).json({ error: 'カテゴリを選択してください' });
   }
 
@@ -147,6 +199,15 @@ app.post('/api/found', rateLimit(15, 60 * 1000), upload.single('image'), (req, r
     if (Array.isArray(parsed)) tags = parsed.map((t) => cleanText(t, 30)).filter(Boolean).slice(0, 10);
   } catch (_) { /* タグなし扱い */ }
 
+  // 画像を保存(ローカル or Firebase)
+  let imagePath = null;
+  if (req.file) {
+    const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }[req.file.mimetype] || '.jpg';
+    const filename = `found_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
+    await imageStore.save(filename, req.file.buffer, req.file.mimetype);
+    imagePath = `/uploads/${filename}`;
+  }
+
   const item = store.createFoundItem({
     category,
     color: cleanColor(body.color),
@@ -155,7 +216,7 @@ app.post('/api/found', rateLimit(15, 60 * 1000), upload.single('image'), (req, r
     locationFound: cleanText(body.locationFound, 100),
     storagePlace: cleanText(body.storagePlace, 100) || STORAGE_PLACES[0],
     reporterName: cleanText(body.reporterName, 50),
-    imagePath: req.file ? `/uploads/${req.file.filename}` : null,
+    imagePath,
   });
 
   // 待機中の探し物とマッチング → 部屋ごとにリアルタイム通知
@@ -178,6 +239,9 @@ app.post('/api/found', rateLimit(15, 60 * 1000), upload.single('image'), (req, r
 
   io.emit('found-registered', publicItem(item));
   res.json({ item: publicItem(item), notified });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // --- 拾得物の検索・一覧 ---
@@ -367,6 +431,14 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`みつかる君 サーバー起動: http://localhost:${PORT}`);
-});
+// ストレージ初期化が終わってからリクエストを受け付ける
+initStorage()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`みつかる君 サーバー起動: http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('[server] 起動失敗(ストレージ初期化エラー):', err);
+    process.exit(1);
+  });

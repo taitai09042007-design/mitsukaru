@@ -11,12 +11,19 @@ services:
       # 返却記録を保管担当だけに制限するPIN(Renderのダッシュボードで値を設定)
       - key: STAFF_PIN
         sync: false
-    # 注意: freeプランはディスクが一時的なため、再デプロイ/再起動でデータと画像が消えます。
-    # データを永続化する場合は有料プランにして以下を有効化し、DATA_DIR も設定してください。
+      # ===== Firebase永続化(推奨) =====
+      # FIREBASE_DATABASE_URL: RTDBのURL(例: https://xxx-default-rtdb.firebaseio.com/)
+      - key: FIREBASE_DATABASE_URL
+        sync: false
+      # FIREBASE_SERVICE_ACCOUNT: サービスアカウント鍵JSONの中身を丸ごと貼り付け
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      # データを保存するRTDB内のルートパス
+      - key: FIREBASE_ROOT
+        value: mitsukaru
+    # Firebaseを使わない場合の代替: 有料プランで永続ディスクをマウントし
+    # DATA_DIR にマウント先を指定する
     # disk:
     #   name: mitsukaru-data
     #   mountPath: /var/data
     #   sizeGB: 1
-    # envVars に追加:
-    #   - key: DATA_DIR
-    #     value: /var/data
