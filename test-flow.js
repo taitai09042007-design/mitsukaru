@@ -66,6 +66,15 @@ function assert(cond, label) {
   const returned = await json('POST', `/api/found/${found.item.id}/return`, { returnedTo: '2-3 テスト' });
   assert(returned.status === 'returned', '返却記録');
 
+  // 6.5 保管担当: 返却履歴(PIN未設定時はそのまま閲覧可)
+  const history = await json('GET', '/api/staff/history');
+  assert(history.items.length === 1, '返却履歴に1件記録');
+  assert(history.items[0].returnedTo === '2-3 テスト', '受け取った人の名前が記録されている');
+
+  // 一般向けAPIには受取人名が含まれないこと(プライバシー)
+  const publicView = await json('GET', `/api/found/${found.item.id}`);
+  assert(publicView.returnedTo === undefined, '一般向けAPIに受取人名は含まれない');
+
   // 7. 統計
   const stats = await json('GET', '/api/stats');
   assert(stats.total === 1 && stats.returned === 1 && stats.returnRate === 100, '統計(返却率100%)');

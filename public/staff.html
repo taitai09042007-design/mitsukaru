@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保管担当 - みつかる君</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="/">🔍 みつかる君</a>
+      <div class="nav-links">
+        <a href="/">さがす</a>
+        <a href="/found.html">とどける</a>
+        <a href="/lost.html">通知をまつ</a>
+        <a href="/dashboard.html">ダッシュボード</a>
+        <a href="/staff.html" class="active">保管担当</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width:760px">
+    <h1 class="page-title">🗝️ 保管担当ページ</h1>
+    <p class="page-sub">返却履歴(いつ・何を・誰に返したか)を確認できます</p>
+
+    <!-- PIN入力 -->
+    <form class="card" id="pin-form" style="display:none; max-width:420px">
+      <div class="form-group">
+        <label>保管担当のPIN</label>
+        <input type="password" id="pin-input" maxlength="30" placeholder="PINを入力" autocomplete="off">
+        <div class="form-hint" id="pin-error" style="color:var(--danger)"></div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">🔓 履歴を表示</button>
+    </form>
+
+    <!-- 履歴表示 -->
+    <div id="history-section" style="display:none">
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="num" id="stat-returned">-</div>
+          <div class="label">返却済み</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="stat-stored">-</div>
+          <div class="label">保管中</div>
+        </div>
+      </div>
+
+      <div class="notice" id="demo-notice" style="display:none">
+        ⚠️ 現在PINが未設定(デモモード)のため、誰でもこのページを見られます。
+        本運用では環境変数 <strong>STAFF_PIN</strong> を設定してください。
+      </div>
+
+      <h2 class="section-title">📋 返却履歴</h2>
+      <div id="history-list"></div>
+      <div class="empty-state" id="history-empty" style="display:none">
+        <div class="big">📭</div>
+        まだ返却の記録はありません
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/staff.js"></script>
+</body>
+</html>

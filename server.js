@@ -289,6 +289,27 @@ app.post('/api/found/:id/return', rateLimit(30, 60 * 1000), (req, res) => {
   res.json(publicItem(item));
 });
 
+// --- 保管担当用: 返却履歴(STAFF_PIN設定時はPIN必須) ---
+// PINはヘッダ x-staff-pin で渡す。総当たり対策に厳しめのレート制限をかける
+app.get('/api/staff/history', rateLimit(10, 60 * 1000), (req, res) => {
+  if (STAFF_PIN && cleanText(req.get('x-staff-pin'), 30) !== STAFF_PIN) {
+    return res.status(401).json({ error: 'PINが正しくありません' });
+  }
+
+  const items = store.listFoundItems()
+    .filter((i) => i.status === 'returned')
+    .sort((a, b) => String(b.returnedAt || '').localeCompare(String(a.returnedAt || '')))
+    .map((item) => ({
+      ...publicItem(item),
+      // 保管担当だけに見せる記録(一般向けAPIには含めない)
+      returnedTo: item.returnedTo || '記録なし',
+      reporterName: item.reporterName || '記録なし',
+    }));
+
+  const stored = store.listFoundItems().filter((i) => i.status === 'stored').length;
+  res.json({ items, storedCount: stored });
+});
+
 // --- 探し物リクエストの登録(マッチング待機) ---
 app.post('/api/lost', rateLimit(15, 60 * 1000), (req, res) => {
   const body = req.body || {};
